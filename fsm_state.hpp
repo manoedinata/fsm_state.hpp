@@ -66,13 +66,23 @@ public:
      */
     inline FSMState(std::string name, double publish_rate = 0.1)
         : fsm_name(name),
-          current_state("UNKNOWN"),
-          previous_state("NONE"),
+          //   current_state("STATE_INIT"),
+          //   previous_state("NONE"),
           transition_reason(""),
           publish_rate_sec(publish_rate)
     {
         state_pub = nh.advertise<std_msgs::String>("/states/" + fsm_name, 10);
         last_publish_time = ros::Time::now();
+    }
+
+    /**
+     * @brief Initialize the FSM with an initial state. Call this before the first updateState() call.
+     */
+    inline void init(std::string initial_state)
+    {
+        current_state = initial_state;
+        previous_state = "NONE";
+        publishData();
     }
 
     /**
@@ -97,6 +107,12 @@ public:
      */
     inline void updateState(std::string new_state)
     {
+        if (current_state.empty())
+        {
+            ROS_ERROR("[%s] FSMState not initialized! Call init() before updateState().", fsm_name.c_str());
+            return;
+        }
+
         bool state_changed = (new_state != current_state);
 
         if (state_changed)
